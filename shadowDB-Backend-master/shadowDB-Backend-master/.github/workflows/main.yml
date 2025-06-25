@@ -1,0 +1,83 @@
+name: Build, Test, and Deploy Node.js Backend
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.18.0
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Upload to VPS via SCP
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.PRIVATE_KEY }}
+          port: 22
+          source: "."
+          target: "/tmp/deploy"
+          strip_components: 1
+
+      - name: Deploy to server and restart PM2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.PRIVATE_KEY }}
+          port: 22
+          script: |
+            DEPLOY_DIR="/home/samaalasima-api-shadowdb/htdocs/api.shadowdb.samaalasima.com/"
+            
+            echo "Deploying to $DEPLOY_DIR..."
+            
+            # Create deploy directory if it doesn't exist
+            mkdir -p $DEPLOY_DIR
+            
+            # Backup the .env file if it exists
+            if [ -f "$DEPLOY_DIR/.env" ]; then
+              echo "Backing up .env file..."
+              cp "$DEPLOY_DIR/.env" /tmp/.env.backup
+            fi
+            
+            # Clean the deploy directory (optional, depending on your needs)
+            # rm -rf $DEPLOY_DIR/*
+            
+            # Copy files from temp location to deploy directory
+            cp -r /tmp/deploy/* $DEPLOY_DIR/
+            
+            # Restore the .env file if it was backed up
+            if [ -f "/tmp/.env.backup" ]; then
+              echo "Restoring .env file..."
+              mv /tmp/.env.backup "$DEPLOY_DIR/.env"
+            fi
+            
+            # Navigate to the deploy directory
+            cd $DEPLOY_DIR
+            
+            # Install production dependencies
+            npm install --production
+            
+            # Restart the PM2 process
+            pm2 restart shadowdb-backend --update-env || echo "No PM2 process found, starting a new one..." && pm2 start ./dist/server.js --name=shadowdb-backend
+            
+            # Clean up temp directory
+            rm -rf /tmp/deploy

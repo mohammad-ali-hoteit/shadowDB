@@ -1,0 +1,236 @@
+<!-- Modern ShadowDB Dashboard -->
+<div class="app-shell" [ngClass]="{'dark-theme': isDarkMode, 'light-theme': !isDarkMode}">
+  <!-- Animated Background -->
+  <div class="animated-bg">
+    <div class="gradient-sphere gradient-1"></div>
+    <div class="gradient-sphere gradient-2"></div>
+    <div class="gradient-sphere gradient-3"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-content">
+      <div class="brand" [class.animate-brand]="isLoaded">
+        <div class="logo-container">
+          <div class="logo-shape"></div>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-name">ShadowDB<span class="accent-dot">.</span></h1>
+          <span class="brand-tagline">Secure Company Intelligence</span>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <button class="theme-toggle" (click)="toggleTheme()" title="Toggle dark/light mode">
+          <div class="toggle-track">
+            <div class="toggle-indicator" [style.transform]="isDarkMode ? 'translateX(28px)' : 'translateX(0)'">
+              <i class="fas" [ngClass]="isDarkMode ? 'fa-sun' : 'fa-moon'"></i>
+            </div>
+          </div>
+        </button>
+        
+        <button class="user-menu" [class.open]="isUserMenuOpen" (click)="toggleUserMenu()">
+          <div class="user-avatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <span class="username">{{ username }}</span>
+          <i class="fas fa-chevron-down"></i>
+          
+          <div class="user-dropdown" *ngIf="isUserMenuOpen">
+            <ul>
+              <li><a href="#" (click)="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+          </div>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Search Section -->
+    <section class="search-section">
+      <div class="search-content">
+        <h2 class="search-title">Find <span class="highlight">Companies</span> In Our Database</h2>
+        <p class="search-subtitle">Enter a company name, location or owner to begin your search</p>
+        
+        <div class="search-container" [class.focused]="isSearchFocused">
+          <div class="search-box">
+            <div class="search-icon pulse">
+              <i class="fas fa-search"></i>
+            </div>
+            <input  
+              type="text" 
+              class="search-input" 
+              [(ngModel)]="searchQuery" 
+              placeholder="Search companies by name, location, or owner..." 
+              (input)="onSearchInput()"
+              (focus)="isSearchFocused = true"
+              (blur)="isSearchFocused = false"
+              #searchInput
+            >
+            <button *ngIf="searchQuery" class="clear-btn" (click)="clearSearch()" aria-label="Clear search">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <section class="results-section" [class.has-results]="companies.length > 0 && !loading">
+      <!-- Loading State -->
+      <div *ngIf="loading" class="state-container loading-state">
+        <div class="loading-animation">
+          <div class="spinner-ring"></div>
+          <div class="spinner-dot"></div>
+        </div>
+        <h3 class="state-title">Searching Database</h3>
+        <p class="state-message">Finding matches across secure records...</p>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="error" class="state-container error-state">
+        <div class="state-icon-container">
+          <i class="fas fa-exclamation-circle state-icon"></i>
+        </div>
+        <h3 class="state-title">Search Error</h3>
+        <p class="state-message">{{ error }}</p>
+        <button class="action-button" (click)="retrySearch()">
+          <i class="fas fa-redo"></i>
+          Try Again
+        </button>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="noResults && !loading && !error" class="state-container empty-state">
+        <div class="state-icon-container">
+          <i class="fas fa-search state-icon"></i>
+        </div>
+        <h3 class="state-title">No Matches Found</h3>
+        <p class="state-message">We couldn't find any companies matching "<span class="highlight">{{ searchQuery }}</span>"</p>
+        <div class="empty-suggestions">
+          <p class="suggestion-title">Try:</p>
+          <ul class="suggestion-list">
+            <li><i class="fas fa-check-circle"></i> Using different keywords</li>
+            <li><i class="fas fa-check-circle"></i> Checking for typos</li>
+            <li><i class="fas fa-check-circle"></i> Searching by location or owner</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Results Grid -->
+      <div *ngIf="companies.length > 0 && !loading" class="results-container" [@fadeInUp]="'visible'">
+        <div class="results-header">
+          <h3 class="results-title">
+            <span class="results-highlight">{{ companies.length }}</span> Companies Found
+          </h3>
+          
+          <!-- <div class="results-actions">
+            <div class="view-options">
+              <button class="view-toggle active">
+                <i class="fas fa-th-large"></i>
+              </button>
+              <button class="view-toggle">
+                <i class="fas fa-list"></i>
+              </button>
+            </div>
+          </div> -->
+        </div>
+        
+        <div class="results-grid">
+          <div *ngFor="let company of companies; let i = index" 
+               class="company-card" 
+               [class.blacklisted]="company.blacklisted"
+               [@cardAnimation]="{value: 'visible', params: {delay: i * 100}}">
+            
+            <div class="card-badge" *ngIf="company.blacklisted">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>Blacklisted</span>
+            </div>
+            
+            <div class="card-content">
+              <div class="company-header">
+                <div class="company-logo-container">
+                  <!-- Try direct logo first -->
+                  <img 
+                    *ngIf="company.logoUrl" 
+                    [src]="getLogoUrl(company)" 
+                    alt="Company logo" 
+                    class="company-logo"
+                    (error)="onLogoError($event, company)"
+                    loading="lazy"
+                    crossorigin="anonymous"
+                  >
+                  <!-- Show initials as fallback -->
+                  <div *ngIf="!company.logoUrl" class="company-initials" [style.background-color]="getRandomColor(company.names[0])">
+                    {{ getInitials(company.names) }}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="company-body">
+                <h3 class="company-name">{{ company.names[0] }}</h3>
+                
+                <!-- Display additional names if they exist -->
+                <div class="company-aliases" *ngIf="company.names.length > 1">
+                  <span class="alias-label">Also known as:</span>
+                  <div class="alias-list">
+                    <span class="alias" *ngFor="let alias of company.names.slice(1)">{{ alias }}</span>
+                  </div>
+                </div>
+                
+                <div class="company-location" *ngIf="company.location">
+                  <i class="fas fa-map-marker-alt"></i>
+                  <span>{{ company.location }}</span>
+                </div>
+                
+                <div class="company-meta">
+                  <div class="meta-row" *ngIf="company.owner">
+                    <div class="meta-icon"><i class="fas fa-user"></i></div>
+                    <div class="meta-text">{{ company.owner }}</div>
+                  </div>
+                  
+                  <div class="meta-row" *ngIf="company.phone">
+                    <div class="meta-icon"><i class="fas fa-phone"></i></div>
+                    <div class="meta-text">{{ company.phone }}</div>
+                  </div>
+                  
+                  <div class="meta-row" *ngIf="company.email">
+                    <div class="meta-icon"><i class="fas fa-envelope"></i></div>
+                    <div class="meta-text">{{ company.email }}</div>
+                  </div>
+
+                  <div class="meta-row" *ngIf="company.notes">
+                    <div class="meta-icon"><i class="fas fa-sticky-note"></i></div>
+                    <div class="meta-text">{{ company.notes }}</div>
+                  </div>
+                  
+                  <div class="meta-row" *ngIf="company.createdAt">
+                    <div class="meta-icon"><i class="fas fa-calendar"></i></div>
+                    <div class="meta-text">{{ formatDate(company.createdAt) }}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="company-footer">
+                <button class="card-btn details-btn">
+                  <i class="fas fa-info-circle"></i>
+                  <span>Details</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-bottom">
+      <p class="copyright">&copy; {{ currentYear }} ShadowDB. All rights reserved.</p>
+    </div>
+  </footer>
+</div>

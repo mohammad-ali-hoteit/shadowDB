@@ -1,0 +1,204 @@
+<div class="companies-container fade-in">
+  <div class="page-header">
+    <div class="header-title">
+      <h1>Companies Management</h1>
+      <p class="text-secondary">Manage and track blacklisted companies</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="showAddForm()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path
+            d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+        </svg>
+        <span>Add Company</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Add/Edit Company Form -->
+  <div class="company-form-wrapper card" *ngIf="isFormVisible">
+    <div class="card-header">
+      <h2>{{ isEditing ? 'Update' : 'Add' }} Company</h2>
+      <button class="btn-close" (click)="cancelEdit()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+          <path
+            d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+        </svg>
+      </button>
+    </div>
+
+    <form [formGroup]="companyForm" (ngSubmit)="onSubmit()">
+      <div class="form-grid">
+        <!-- Company Names Section -->
+        <div class="form-group company-names-section">
+          <label>Company Names</label>
+          <div class="company-names-container" formArrayName="names">
+            <div class="name-input-row" *ngFor="let nameControl of companyNames.controls; let i = index">
+              <input type="text" [formControlName]="i" class="form-control" placeholder="Enter company name"
+                [class.is-invalid]="nameControl.invalid && nameControl.touched">
+              <button type="button" class="btn-icon remove-name" (click)="removeNameField(i)"
+                *ngIf="companyNames.length > 1" title="Remove name">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path
+                    d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+                </svg>
+              </button>
+            </div>
+            <div class="invalid-feedback"
+              *ngIf="companyNames.controls.length > 0 && companyNames.controls[0].invalid && companyNames.controls[0].touched">
+              At least one company name is required
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary add-name-btn" (click)="addNameField()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                  d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+              </svg>
+              Add another name
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="location">Location</label>
+          <input type="text" id="location" formControlName="location" class="form-control"
+            placeholder="Enter company location">
+          <div class="invalid-feedback"
+            *ngIf="companyForm.get('location')?.invalid && companyForm.get('location')?.touched">
+            Location is required
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="owner">Owner</label>
+          <input type="text" id="owner" formControlName="owner" class="form-control" placeholder="Enter owner name">
+          <div class="invalid-feedback" *ngIf="companyForm.get('owner')?.invalid && companyForm.get('owner')?.touched">
+            Owner name is required
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Phone</label>
+          <input type="tel" id="phone" formControlName="phone" class="form-control" placeholder="Enter phone number">
+          <div class="invalid-feedback" *ngIf="companyForm.get('phone')?.invalid && companyForm.get('phone')?.touched">
+            Valid phone number is required
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" formControlName="email" class="form-control" placeholder="Enter email address">
+          <div class="invalid-feedback" *ngIf="companyForm.get('email')?.invalid && companyForm.get('email')?.touched">
+            Valid email is required
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="logoUrl">Logo URL</label>
+          <input type="url" id="logoUrl" formControlName="logoUrl" class="form-control" placeholder="Enter logo URL">
+        </div>
+
+        <div class="form-group">
+          <label for="notes">Notes</label>
+          <textarea id="notes" formControlName="notes" class="form-control"
+            placeholder="Enter any additional notes"></textarea>
+          <div class="invalid-feedback" *ngIf="companyForm.get('notes')?.invalid && companyForm.get('notes')?.touched">
+            Notes are required</div>
+        </div>
+
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="companyForm.invalid" class="btn btn-primary">
+          <span>{{ isEditing ? 'Update' : 'Save' }} Company</span>
+        </button>
+        <button type="button" (click)="cancelEdit()" class="btn btn-outline-primary">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Companies Table -->
+  <div class="table-container card">
+    <div class="table-header">
+      <h2>All Companies</h2>
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"
+            class="search-icon">
+            <path
+              d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+          </svg>
+          <input type="text" placeholder="Search companies..." class="search-input" [(ngModel)]="searchText"
+            (input)="onSearchChange()" [ngModelOptions]="{standalone: true}">
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Location</th>
+            <th>Owner</th>
+            <th>Contact</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let company of companies">
+            <td class="company-cell">
+              <div class="company-logo" *ngIf="company.logoUrl">
+                <img [src]="company.logoUrl" alt="Company logo">
+              </div>
+              <div class="company-logo placeholder" *ngIf="!company.logoUrl">
+                <span>{{ company.names && company.names.length > 0 ? company.names[0].charAt(0) : 'C' }}</span>
+              </div>
+              <div class="company-info">
+                <h3 class="company-name">{{ company.names && company.names.length > 0 ? company.names[0] : 'Unknown' }}
+                </h3>
+                <div class="company-aliases" *ngIf="company.names && company.names.length > 1">
+                  <span class="alias-badge">+{{ company.names.length - 1 }} aliases</span>
+                  <div class="alias-tooltip">
+                    <div *ngFor="let name of company.names.slice(1)" class="alias-name">{{ name }}</div>
+                  </div>
+                </div>
+                <span class="company-email">{{ company.email }}</span>
+              </div>
+            </td>
+            <td>{{ company.location }}</td>
+            <td>{{ company.owner }}</td>
+            <td>{{ company.phone }}</td>
+            <td class="actions-cell">
+              <button class="btn-icon edit" (click)="editCompany(company)" title="Edit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path
+                    d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
+                </svg>
+              </button>
+              <button class="btn-icon delete" (click)="deleteCompany(company.companyId!)" title="Delete">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path
+                    d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                  <path fill-rule="evenodd"
+                    d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+                </svg>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="companies.length === 0">
+            <td colspan="5" class="empty-state">
+              <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                  <path
+                    d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113zM15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6zM7.443.184a1.5 1.5 0 0 1 1.114 0l7.129 2.852A.5.5 0 0 1 16 3.5v8.662a1 1 0 0 1-.629.928l-7.185 2.874a.5.5 0 0 1-.372 0L.63 13.09a1 1 0 0 1-.63-.928V3.5a.5.5 0 0 1 .314-.464L7.443.184z" />
+                </svg>
+              </div>
+              <h3>No companies found</h3>
+              <p>Add your first company by clicking the "Add Company" button above</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
